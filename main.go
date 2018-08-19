@@ -89,8 +89,7 @@ func UpdateBook(response http.ResponseWriter, request *http.Request) {
 // Init books var
 
 func main() {
-	router := mux.NewRouter()
-
+	
 	books = append(books,
 		Book{ID: "1",
 			Isbn: "48743", Title: "Book One",
@@ -109,10 +108,13 @@ func main() {
 			},
 		})
 
-	router.HandleFunc("/api/books", GetAllBooks).Methods("GET")
-	router.HandleFunc("/api/books/{id}", GetBookByID).Methods("GET")
-	router.HandleFunc("/api/books", CreateBook).Methods("POST")
-	router.HandleFunc("/api/books/{id}", UpdateBook).Methods("PUT")
-	router.HandleFunc("/api/books/{id}", DeleteBook).Methods("DELETE")
-	log.Fatal(http.ListenAndServe(":8000", router))
+	var route IRoute
+
+	route.Get("/api/books", GetAllBooks).
+		Get("/api/books/{id}", GetBookByID).
+		Post("/api/books", CreateBook).
+		Put("/api/books/{id}", UpdateBook).
+		Delete("/api/books/{id}", DeleteBook)
+
+	log.Fatal(http.ListenAndServe(":8000", route.Router()))
 }
