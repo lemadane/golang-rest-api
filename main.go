@@ -3,11 +3,15 @@ package main
 import (
 	"encoding/json"
 	"github.com/gorilla/mux"
+	"io"
 	"log"
 	"math/rand"
 	"net/http"
 	"strconv"
 )
+
+// Any type
+type Any interface{}
 
 // Book Struct (Model)
 type Book struct {
@@ -26,38 +30,44 @@ type Author struct {
 // Init books var as slice Book struct
 var books []Book
 
+
+func toJSON(response http.ResponseWriter, any Any) {
+	response.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(response).Encode(any)
+}
+
+func fromJSON(requestBody io.Reader, any Any) {
+	json.NewDecoder(requestBody).Decode(any)
+}
+
 // GetAllBooks - get all books
 func GetAllBooks(response http.ResponseWriter, request *http.Request) {
-	response.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(response).Encode(books)
+	toJSON(response, books)
 }
 
 // GetBookByID - get a book by id
 func GetBookByID(response http.ResponseWriter, request *http.Request) {
-	response.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(request)
 	for _, item := range books {
 		if item.ID == params["id"] {
-			json.NewEncoder(response).Encode(item)
+			toJSON(response, item)
 			return
 		}
 	}
-	json.NewEncoder(response).Encode(&Book{})
+	toJSON(response, &Book{})
 }
 
 // CreateBook - add a new book
 func CreateBook(response http.ResponseWriter, request *http.Request) {
-	response.Header().Set("Content-Type", "application/json")
 	var book Book
-	_ = json.NewDecoder(request.Body).Decode(&book)
-	book.ID = strconv.Itoa(rand.Intn(10000000))
+	_ = fromJSON(request.Body, &book)
+	book.ID = strconv.Itoa(rand.Intn(10000000)) // generate random id
 	books = append(books, book)
-	json.NewEncoder(response).Encode(book)
+	toJSON(response, book)
 }
 
 // DeleteBook - updates a book
 func DeleteBook(response http.ResponseWriter, request *http.Request) {
-	response.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(request)
 	for index, item := range books {
 		if item.ID == params["id"] {
@@ -65,31 +75,30 @@ func DeleteBook(response http.ResponseWriter, request *http.Request) {
 			break
 		}
 	}
-	json.NewEncoder(response).Encode(books)
+	toJSON(response, books)
 }
 
 // UpdateBook - delete a book
 func UpdateBook(response http.ResponseWriter, request *http.Request) {
-	response.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(request)
 	for index, item := range books {
 		if item.ID == params["id"] {
 			books = append(books[:index], books[index+1:]...)
 			var book Book
-			_ = json.NewDecoder(request.Body).Decode(&book)
+			_ = fromJSON(request.Body, &book)
 			book.ID = params["id"]
 			books = append(books, book)
-			json.NewEncoder(response).Encode(book)
+			toJSON(response, book)
 			return
 		}
 	}
-	json.NewEncoder(response).Encode(books)
+	toJSON(response, books)
 }
 
 // Init books var
 
 func main() {
-	
+
 	books = append(books,
 		Book{ID: "1",
 			Isbn: "48743", Title: "Book One",
